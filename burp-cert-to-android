@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# Script that converts a Burp Suite certificate then imports it into an Android emulator
+# Jesse Somerville 06-08-2018
+
+GRAY='\033[0;90m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+trap "exit 1" TERM
+export TOP_PID=$$
+
+checkPath() {
+    if echo $PATH | grep -q Library/Android/sdk/platform-tools && echo $PATH | grep -q Library/Android/sdk/emulator; then
+        :
+    else
+        echo -e "${GREEN}Adding proper Android Tools to your path..${NC}"
+        username=$(whoami)
+        export PATH = $PATH:/Users/$username/LibraryAndroid/sdk/platform-tools:/Users/$username/Library/Android/adk/emulator
+    fi
+}
+
+convertCert() {
+    read -e -p "Enter the filepath of your burp certificate: " burpCA
+    if [ ! -f "$burpCA" ]; then
+        echo "${RED}Cert File Does Not Exist!${NC}"
+        exit
+    elif [[ $(openssl x509 -inform DER -in $burpCA -text -noout | head -1) != "Certificate:" ]]; then
+        echo "${RED}Cert file must be of type DER!${NC}"
+        exit
+    fi
+    openssl x509 -inform DER -in $burpCA -out cacert.pem
+    echo $(openssl x509 -inform PEM -subject_hash_old -in cacert.pem | head -1).0
+    mv cacert.pem $(openssl x509 -inform PEM -subject_hash_old -in cacert.pem | head -1).0
+}
+
+startEmulator() {
+    emulators=$(emulator -list-avds)
+    if [[ ($emulators) ]]; then
+        echo -e "Your emulators:"
+        echo -e "${ORANGE}$emulators${NC}"
+        while : ; do
+            read -e -p "Enter the name of the emulator you wish to use: " emulatorName
+            if emulator -list-avds | grep -q "^$emulatorName$"; then
+                emulator @$emulatorName -writable-system -http-proxy 127.0.0.1:8080 &
+                getEmulatorAPIVersion
+                break
+            else
+                echo -e "${RED}That emulator does not exist!${NC}"
+            fi
+        done
+    else
+        echo "You need to create an emulator before you continue."
+        exit
+    fi
+}
+
+getEmulatorAPIVersion() {
+    echo -e "${GREEN}Emulator is booting (You can ignore the errors)...${NC}"
+    while [ "`adb shell getprop sys.boot_completed | tr -d '\r' `" != "1" ] ; do sleep 2; done
+    echo -e "${GREEN}Checking Emulator API Version...${NC}"
+    apiVersion=$(adb shell getprop ro.build.version.sdk)
+    if adb shell getprop ro.build.version.sdk | grep -q 24; then
+        :
+    else
+        echo -e "${RED}Your emulator has to be running API version 24. This one is running $apiVersion.${NC}"
+        exit
+    fi
+}
+
+moveCertToEmulator() {
+    adb root
+    adb remount
+    adb push $certName /sdcard/
+    adb shell mv /sdcard/$certName /system/etc/security/cacerts/
+    adb shell chmod 644 /system/etc/security/cacerts/$certName 
+    adb reboot
+    echo -e "${GREEN}Certificate Successfully Installed!"
+}
+
+checkPath
+echo -e "${GRAY}Converting Burp Certificate to comply with Android...${NC}"
+certName=$(convertCert)
+if [ ! -f "$certName" ]; then
+    echo -e $certName
+    exit
+fi
+startEmulator
+moveCertToEmulator "$certName"
