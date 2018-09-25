@@ -76,7 +76,7 @@ moveCertToEmulator() {
     adb shell mv /sdcard/$certName /system/etc/security/cacerts/
     adb shell chmod 644 /system/etc/security/cacerts/$certName 
     adb reboot
-    echo -e "${GREEN}Certificate Successfully Installed!"
+    echo -e "${GREEN}Certificate Successfully Installed!${NC}"
 }
 
 checkPath
