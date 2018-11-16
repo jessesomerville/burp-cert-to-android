@@ -31,7 +31,7 @@ convertCert() {
         exit
     fi
     openssl x509 -inform DER -in $burpCA -out ./cacert.pem
-    androidCA=$(openssl x509 -inform PEM -subject_hash_old -in cacert.pem | head -1).0
+    echo $(openssl x509 -inform PEM -subject_hash_old -in cacert.pem | head -1).0
     mv ./cacert.pem $(openssl x509 -inform PEM -subject_hash_old -in cacert.pem | head -1).0
 }
 
