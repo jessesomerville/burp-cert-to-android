@@ -73,7 +73,7 @@ moveCertToEmulator() {
     adb root
     # I know this is ugly, but some AndroidImages will remount for only a few seconds.
     # If any of these fail then the return status should let us know.
-    adb remount && adb push $1 /system/etc/security/cacerts/ && adb shell chmod 644 /system/etc/security/cacerts/$androidCA
+    adb remount && adb push $1 /system/etc/security/cacerts/ && adb shell chmod 644 /system/etc/security/cacerts/$certName
     if [ $? -eq 1 ]
     then
        echo "Failed to install certificate."
@@ -91,4 +91,4 @@ if [ ! -f "$certName" ]; then
     exit
 fi
 startEmulator
-moveCertToEmulator $anroidCA
+moveCertToEmulator $certName
