@@ -17,7 +17,7 @@ checkPath() {
     else
         echo -e "${GREEN}Adding proper Android Tools to your path..${NC}"
         username=$(whoami)
-        export PATH = $PATH:/Users/$username/LibraryAndroid/sdk/platform-tools:/Users/$username/Library/Android/adk/emulator
+        export PATH = $PATH:/Users/$username/Library/Android/sdk/platform-tools:/Users/$username/Library/Android/sdk/emulator
     fi
 }
 
